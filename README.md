@@ -2,7 +2,7 @@
 
 # 📺 YouTube 구독 자동화
 
-**Google Takeout CSV로 YouTube 구독 대량 자동화 쿠키 로그인 Electron 데스크탑 앱**
+**Google Takeout CSV로 YouTube 구독 대량 자동 Electron 데스크탑 앱**
 
 ![Electron](https://img.shields.io/badge/Electron-29.0-47848F?style=flat-square&logo=electron&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=node.js&logoColor=white)
