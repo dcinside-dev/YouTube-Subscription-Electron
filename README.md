@@ -60,7 +60,7 @@
 
 ```bash
 # 1. 저장소 클론
-git clone https://github.com/YOUR_USERNAME/yt-sub-app.git
+git clone https://github.com/YOUR_USERNAME/yt-sub-app.git](https://github.com/dcinside-dev/YouTube-Subscription-Electron.git
 cd yt-sub-app
 
 # 2. 의존성 설치
