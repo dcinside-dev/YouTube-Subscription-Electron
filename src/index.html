@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data:;
+">
+<title>YouTube 구독 자동화</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;--s1:#141416;--s2:#1c1c1f;--s3:#242428;
+  --b1:#2a2a2e;--b2:#3a3a40;
+  --text:#f0f0f2;--text2:#8888a0;--text3:#55556a;--text4:#3a3a4e;
+  --red:#ff3b3b;--green:#00e676;--amber:#ffb300;--blue:#448aff;
+  --mono:'JetBrains Mono','Consolas',monospace;
+  --sans:'Pretendard','Apple SD Gothic Neo',sans-serif;
+  --r:7px;--r2:11px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;height:100vh;overflow:hidden;user-select:none}
+
+#app{display:grid;grid-template-columns:390px 1fr;grid-template-rows:68px 1fr;height:100vh}
+
+/* Titlebar */
+#titlebar{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:0 150px 0 16px;background:var(--s1);border-bottom:1px solid var(--b1);-webkit-app-region:drag}
+#titlebar *{-webkit-app-region:no-drag}
+.tb-logo{width:26px;height:26px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.tb-title{font-size:13px;font-weight:700;letter-spacing:-0.02em}
+.tb-sub{font-size:11px;color:var(--text3)}
+#tb-badge{margin-left:auto;font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:99px;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.2)}
+
+/* Left */
+#left{display:flex;flex-direction:column;border-right:1px solid var(--b1);background:var(--s1);overflow:hidden}
+
+/* Tabs */
+#tab-bar{display:flex;border-bottom:1px solid var(--b1);flex-shrink:0}
+.tab{flex:1;padding:10px 6px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:color .15s,border-color .15s;letter-spacing:-0.01em}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--text);border-bottom-color:var(--red)}
+.tab-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.tab-panel.active{display:flex}
+
+/* Common sections */
+.sec{padding:12px 14px;border-bottom:1px solid var(--b1);flex-shrink:0}
+.lbl{font-size:9px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;display:block}
+.mini-btn{font-size:11px;font-weight:500;font-family:var(--sans);background:var(--s3);color:var(--text2);border:1px solid var(--b2);border-radius:var(--r);padding:6px 12px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;flex-shrink:0}
+.mini-btn:hover{background:var(--s2);color:var(--text)}
+.field label{display:block;font-size:9px;font-family:var(--mono);color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em}
+.field input[type=number]{width:100%;background:var(--s2);border:1px solid var(--b1);color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 9px;border-radius:var(--r);outline:none;transition:border-color .15s}
+.field input[type=number]:focus{border-color:var(--blue)}
+
+/* ── TAB 1: 구독 ── */
+.file-row{display:flex;gap:6px;align-items:center}
+#file-name{flex:1;font-size:11px;font-family:var(--mono);color:var(--text3);background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:6px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#csv-wrap{flex:1;display:flex;flex-direction:column;padding:0 14px 12px;overflow:hidden;min-height:0}
+.csv-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px}
+#ch-count{font-size:10px;font-family:var(--mono);color:var(--text4);background:var(--s2);padding:2px 8px;border-radius:4px}
+#csv-input{flex:1;resize:none;outline:none;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.65;border:1px solid var(--b1);border-radius:var(--r2);padding:10px 12px;transition:border-color .15s}
+#csv-input:focus{border-color:var(--b2)}
+#csv-input::placeholder{color:var(--text4)}
+.delay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--b1);flex-shrink:0}
+.stat{background:var(--bg);padding:10px 6px;text-align:center}
+.stat-n{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1}
+.stat-l{font-size:9px;color:var(--text3);margin-top:3px;text-transform:uppercase}
+.s-tot .stat-n{color:var(--text)}.s-prc .stat-n{color:var(--blue)}.s-ok .stat-n{color:var(--green)}.s-err .stat-n{color:var(--red)}
+#prog-wrap{padding:10px 14px;border-bottom:1px solid var(--b1);flex-shrink:0}
+#prog-bg{height:3px;background:var(--s3);border-radius:99px;overflow:hidden}
+#prog-fill{height:100%;width:0%;background:var(--green);border-radius:99px;transition:width .4s ease}
+#prog-txt{display:flex;justify-content:space-between;font-size:9px;font-family:var(--mono);color:var(--text4);margin-top:5px}
+#actions{display:flex;flex-direction:column;gap:6px;padding:10px 14px;border-bottom:1px solid var(--b1);flex-shrink:0}
+.btn{width:100%;padding:9px;border-radius:var(--r);border:none;font-size:12px;font-weight:700;font-family:var(--sans);cursor:pointer;letter-spacing:-0.01em;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.25;cursor:not-allowed;transform:none!important}
+.btn-start{background:var(--red);color:#fff}.btn-start:hover:not(:disabled){opacity:.85}
+.btn-stop{background:var(--s3);color:var(--text2);border:1px solid var(--b2)}.btn-stop:hover:not(:disabled){background:var(--s2)}
+.btn-row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btn-retry{background:rgba(255,179,0,.1);color:var(--amber);border:1px solid rgba(255,179,0,.25)}.btn-retry:hover:not(:disabled){background:rgba(255,179,0,.18)}
+.btn-clr{background:var(--s3);color:var(--text3);border:1px solid var(--b1)}.btn-clr:hover:not(:disabled){color:var(--text2)}
+#log-head{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;flex-shrink:0}
+#log-cnt{font-size:10px;font-family:var(--mono);color:var(--text4)}
+#log{flex:1;overflow-y:auto;padding:0 14px 14px;scrollbar-width:thin;scrollbar-color:var(--b1) transparent}
+#log::-webkit-scrollbar{width:3px}
+#log::-webkit-scrollbar-thumb{background:var(--b1);border-radius:99px}
+.log-line{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid #111113;font-size:10px;font-family:var(--mono);animation:lfade .2s ease}
+.log-line:last-child{border-bottom:none}
+@keyframes lfade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.log-t{color:var(--text4);flex-shrink:0}
+.log-m{line-height:1.5;word-break:break-all}
+.log-ok{color:var(--green)}.log-warn{color:var(--amber)}.log-info{color:var(--blue)}.log-err{color:var(--red)}
+.log-empty{color:var(--text4);font-size:10px;text-align:center;padding:20px 0}
+
+/* ── TAB 2: 쿠키 ── */
+#cookie-panel{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:14px;gap:12px;scrollbar-width:thin;scrollbar-color:var(--b1) transparent}
+#cookie-panel::-webkit-scrollbar{width:3px}
+#cookie-panel::-webkit-scrollbar-thumb{background:var(--b1);border-radius:99px}
+
+/* 로그인 상태 카드 */
+#ck-status-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:13px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0;transition:border-color .3s}
+#ck-status-card.logged-in{border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.04)}
+#ck-avatar{width:40px;height:40px;border-radius:50%;background:var(--s3);border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:border-color .3s}
+#ck-status-card.logged-in #ck-avatar{border-color:rgba(0,230,118,.4)}
+#ck-info{flex:1;min-width:0}
+#ck-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ck-sub{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+#ck-dot{width:8px;height:8px;border-radius:50%;background:var(--text4);flex-shrink:0;transition:background .3s,box-shadow .3s}
+#ck-dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,.2)}
+
+/* 포맷 탭 */
+.fmt-tabs{display:flex;gap:5px;flex-wrap:wrap}
+.fmt-tab{font-size:10px;font-family:var(--mono);padding:4px 10px;border-radius:5px;cursor:pointer;border:1px solid var(--b1);color:var(--text3);background:var(--s2);transition:all .15s;white-space:nowrap}
+.fmt-tab:hover{color:var(--text2);border-color:var(--b2)}
+.fmt-tab.active{background:var(--s3);color:var(--text);border-color:var(--b2)}
+
+/* 포맷 힌트 */
+#fmt-hint{font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:9px 11px;line-height:1.7}
+#fmt-hint strong{color:var(--text2)}
+
+/* 쿠키 입력 */
+#cookie-input{width:100%;height:140px;resize:none;outline:none;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.65;border:1px solid var(--b1);border-radius:var(--r2);padding:10px 12px;transition:border-color .15s;display:block}
+#cookie-input:focus{border-color:var(--b2)}
+#cookie-input::placeholder{color:var(--text4)}
+
+/* 쿠키 버튼 */
+.ck-actions{display:flex;flex-direction:column;gap:6px}
+.btn-inject{background:var(--blue);color:#fff}.btn-inject:hover:not(:disabled){opacity:.85}
+.btn-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.btn-verify{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.25)}.btn-verify:hover:not(:disabled){background:rgba(0,230,118,.18)}
+.btn-export{background:rgba(68,138,255,.1);color:var(--blue);border:1px solid rgba(68,138,255,.25)}.btn-export:hover:not(:disabled){background:rgba(68,138,255,.18)}
+.btn-clear-ck{background:rgba(255,59,59,.1);color:var(--red);border:1px solid rgba(255,59,59,.2)}.btn-clear-ck:hover:not(:disabled){background:rgba(255,59,59,.18)}
+
+/* 가이드 */
+.guide{background:rgba(68,138,255,.06);border:1px solid rgba(68,138,255,.15);border-radius:var(--r);padding:11px 13px}
+.guide-title{font-size:10px;color:var(--blue);font-weight:600;margin-bottom:7px}
+.guide-body{font-size:10px;color:var(--text3);line-height:1.75;font-family:var(--mono)}
+.guide-body code{background:var(--s3);color:var(--text2);padding:1px 5px;border-radius:3px}
+
+/* Right / webview */
+#right{position:relative;background:#fff;display:flex;flex-direction:column}
+#wv-toolbar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0}
+.wv-btn{background:var(--s3);border:1px solid var(--b1);color:var(--text2);border-radius:5px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0;transition:background .15s}
+.wv-btn:hover{background:var(--b1);color:var(--text)}
+.wv-btn:disabled{opacity:.3;cursor:not-allowed}
+#wv-url{flex:1;background:var(--s2);border:1px solid var(--b1);color:var(--text3);font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:5px;outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#wv-login-hint{font-size:11px;color:var(--amber);white-space:nowrap;flex-shrink:0;display:none}
+#wv-loading{position:absolute;top:41px;left:0;right:0;height:2px;background:var(--red);transform-origin:left;transform:scaleX(0);transition:transform .3s ease;z-index:10}
+webview{flex:1;width:100%;display:flex;border:none}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s3);border:1px solid var(--b2);color:var(--text);font-size:12px;padding:8px 20px;border-radius:99px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999;white-space:nowrap;font-family:var(--sans)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="titlebar">
+    <div class="tb-logo">▶</div>
+    <span class="tb-title">YouTube 구독 자동화</span>
+    <span class="tb-sub">— Electron</span>
+    <span id="tb-badge">대기 중</span>
+  </div>
+
+  <!-- ════ LEFT ════ -->
+  <div id="left">
+    <div id="tab-bar">
+      <div class="tab active" data-tab="subscribe">📋 구독 실행</div>
+      <div class="tab"        data-tab="cookie">🍪 쿠키 로그인</div>
+    </div>
+
+    <!-- TAB 1: 구독 -->
+    <div class="tab-panel active" id="tab-subscribe">
+      <div class="sec">
+        <span class="lbl">CSV 파일 불러오기</span>
+        <div class="file-row">
+          <button class="mini-btn" id="btn-file">📂 파일 선택</button>
+          <div id="file-name">선택된 파일 없음</div>
+        </div>
+      </div>
+      <div id="csv-wrap">
+        <div class="csv-hdr">
+          <span class="lbl" style="margin:0">CSV 내용 (직접 붙여넣기 가능)</span>
+          <span id="ch-count">0 채널</span>
+        </div>
+        <textarea id="csv-input"
+          placeholder="Channel Id,Channel Url,Channel Title&#10;UCxxxxxx,https://www.youtube.com/channel/UCxxxxxx,채널 A&#10;UCyyyyyy,https://www.youtube.com/channel/UCyyyyyy,채널 B"></textarea>
+      </div>
+      <div class="sec">
+        <span class="lbl">딜레이 설정 (ms)</span>
+        <div class="delay-grid">
+          <div class="field"><label>최소</label><input type="number" id="d-min" value="2000" min="500" step="100"></div>
+          <div class="field"><label>최대</label><input type="number" id="d-max" value="4000" min="1000" step="100"></div>
+        </div>
+      </div>
+      <div id="stats">
+        <div class="stat s-tot"><div class="stat-n" id="s-tot">0</div><div class="stat-l">전체</div></div>
+        <div class="stat s-prc"><div class="stat-n" id="s-prc">0</div><div class="stat-l">처리</div></div>
+        <div class="stat s-ok" ><div class="stat-n" id="s-ok">0</div> <div class="stat-l">성공</div></div>
+        <div class="stat s-err"><div class="stat-n" id="s-err">0</div><div class="stat-l">실패</div></div>
+      </div>
+      <div id="prog-wrap">
+        <div id="prog-bg"><div id="prog-fill"></div></div>
+        <div id="prog-txt"><span id="prog-lbl">준비 완료</span><span id="prog-pct">0%</span></div>
+      </div>
+      <div id="actions">
+        <button class="btn btn-start" id="btn-start">▶ 구독 시작</button>
+        <button class="btn btn-stop"  id="btn-stop" disabled>⏹ 중지</button>
+        <div class="btn-row2">
+          <button class="btn btn-retry" id="btn-retry" disabled>↻ 실패 재시도</button>
+          <button class="btn btn-clr"   id="btn-clr">✕ 로그 초기화</button>
+        </div>
+      </div>
+      <div id="log-head">
+        <span class="lbl" style="margin:0">실행 로그</span>
+        <span id="log-cnt">0 항목</span>
+      </div>
+      <div id="log"><div class="log-empty" id="log-empty">로그가 여기 표시됩니다</div></div>
+    </div>
+
+    <!-- TAB 2: 쿠키 로그인 -->
+    <div class="tab-panel" id="tab-cookie">
+      <div id="cookie-panel">
+
+        <!-- 로그인 상태 -->
+        <div id="ck-status-card">
+          <div id="ck-avatar">👤</div>
+          <div id="ck-info">
+            <div id="ck-name">로그인 안 됨</div>
+            <div id="ck-sub">쿠키를 붙여넣거나 유튜브에서 직접 로그인하세요</div>
+          </div>
+          <div id="ck-dot"></div>
+        </div>
+
+        <!-- 포맷 선택 -->
+        <div>
+          <span class="lbl">쿠키 입력 형식 선택</span>
+          <div class="fmt-tabs">
+            <div class="fmt-tab active" data-fmt="json">JSON 배열</div>
+            <div class="fmt-tab" data-fmt="header">Header 문자열</div>
+            <div class="fmt-tab" data-fmt="netscape">Netscape (EditThisCookie)</div>
+          </div>
+        </div>
+
+        <!-- 포맷 힌트 -->
+        <div id="fmt-hint"></div>
+
+        <!-- 쿠키 입력 -->
+        <div>
+          <span class="lbl">쿠키 붙여넣기</span>
+          <textarea id="cookie-input" placeholder="여기에 쿠키를 붙여넣으세요..."></textarea>
+        </div>
+
+        <!-- 버튼 -->
+        <div class="ck-actions">
+          <button class="btn btn-inject" id="btn-inject">🍪 쿠키 주입 후 유튜브 새로고침</button>
+          <div class="btn-row3">
+            <button class="btn btn-verify"   id="btn-verify">✓ 로그인 확인</button>
+            <button class="btn btn-export"   id="btn-export">↑ 쿠키 내보내기</button>
+            <button class="btn btn-clear-ck" id="btn-clear-ck">✕ 세션 초기화</button>
+          </div>
+        </div>
+
+        <!-- 추출 가이드 -->
+        <div class="guide">
+          <div class="guide-title">📖 쿠키 추출 방법</div>
+          <div class="guide-body">
+            <strong style="color:var(--text)">방법 A — Chrome DevTools</strong><br>
+            1. 기존 계정으로 youtube.com 로그인<br>
+            2. F12 → Application 탭<br>
+            3. 좌측 Cookies → https://www.youtube.com 클릭<br>
+            4. 쿠키 목록 전체 선택 후 복사<br>
+            <br>
+            <strong style="color:var(--text)">방법 B — EditThisCookie 확장 (권장)</strong><br>
+            1. Chrome에 <code>EditThisCookie</code> 확장 설치<br>
+            2. YouTube 로그인 후 확장 클릭<br>
+            3. <code>Export (JSON)</code> 버튼 클릭 → 복사<br>
+            4. 위 입력란에 붙여넣기<br>
+            <br>
+            <strong style="color:var(--text)">방법 C — Header 문자열</strong><br>
+            DevTools → Network → 요청 선택 →<br>
+            Request Headers의 <code>cookie:</code> 값 복사
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- ════ RIGHT ════ -->
+  <div id="right">
+    <div id="wv-toolbar">
+      <button class="wv-btn" id="wv-back"    title="뒤로">‹</button>
+      <button class="wv-btn" id="wv-forward"  title="앞으로">›</button>
+      <button class="wv-btn" id="wv-reload"   title="새로고침">↺</button>
+      <div id="wv-url">https://www.youtube.com</div>
+      <span id="wv-login-hint">⚠ 로그인 필요</span>
+    </div>
+    <div id="wv-loading"></div>
+    <webview
+      id="wv"
+      src="https://www.youtube.com"
+      partition="persist:youtube"
+      useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+      allowpopups
+    ></webview>
+  </div>
+
+</div>
+<div id="toast"></div>
+<script src="renderer.js"></script>
+</body>
+</html>
