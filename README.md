@@ -2,7 +2,7 @@
 
 # 📺 YouTube 구독 자동화
 
-**Google Takeout CSV로 YouTube 구독 목록을 새 계정에 자동 이전하는 Electron 데스크탑 앱**
+**Google Takeout CSV로 YouTube 구독 대량 자동화 쿠키 로그인 Electron 데스크탑 앱**
 
 ![Electron](https://img.shields.io/badge/Electron-29.0-47848F?style=flat-square&logo=electron&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=node.js&logoColor=white)
@@ -198,7 +198,6 @@ yt-sub-app/
 
 ## ⚠️ 주의사항
 
-- **YouTube 이용약관**: 자동화 도구는 YouTube 서비스 약관에 위배될 수 있습니다. 개인적인 용도(계정 이전)로만 사용하세요.
 - **차단 방지**: 한 번에 100개 이상 구독 시 YouTube가 일시적으로 요청을 제한할 수 있습니다. 딜레이를 3000~6000ms로 설정하거나 100개씩 나눠서 실행하세요.
 - **이미 구독 중인 채널**: 중복 구독 요청은 오류 없이 무시됩니다.
 - **로그인 필수**: 구독 시작 전 반드시 새 계정으로 로그인 여부를 확인하세요.
